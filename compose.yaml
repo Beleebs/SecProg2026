@@ -1,9 +1,11 @@
 services:
 
-  server:
-    build: ./server
-    ports:
-      - "5000:5000"
+  # server:
+  #   build: ./server
+  #   ports:
+  #     - "5000:5000"
+  #   depends_on:
+  #     - db
 
   db:
     image: postgres:17
@@ -12,9 +14,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
-    - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
-  volumes:
-    postgres_data:
+volumes:
+  postgres_data:
