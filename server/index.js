@@ -1,6 +1,19 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import pg from 'pg';
 
+const { Pool } = pg; 
+// grab things from the env file
+const pool = new Pool({
+    host: process.env.DB_host || 'localhost',
+    port: Number(process.env.DB_PORT || 5432),
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD
+});
+
+// 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -10,6 +23,16 @@ app.use(express.json());
 app.get('/api/message', (req, res) => {
     console.log(`Received request from user`);
     res.json({ message: "Hello from the Express backend!" });
+});
+
+app.get('/api/db-check', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT current_database() AS database');
+    }
+    catch (error) {
+        console.error('Failed Database Query:', error);
+        res.status(503).json({ error: 'Database unavailable' });
+    }
 });
 
 app.listen(PORT, () => {
