@@ -6,7 +6,7 @@ import pg from 'pg';
 const { Pool } = pg; 
 // grab things from the env file
 const pool = new Pool({
-    host: process.env.DB_host || 'localhost',
+    host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 5432),
     database: process.env.DB_NAME,
     user: process.env.DB_USER,
@@ -27,7 +27,12 @@ app.get('/api/message', (req, res) => {
 
 app.get('/api/db-check', async (req, res) => {
     try {
+        console.log(`Received db request from user`);
         const result = await pool.query('SELECT current_database() AS database');
+        res.status(200).json({
+            message: 'Database connection successful',
+            database: result.rows[0].database
+        });
     }
     catch (error) {
         console.error('Failed Database Query:', error);
