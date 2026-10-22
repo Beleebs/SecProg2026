@@ -13,7 +13,7 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD
 });
 
-// 
+// app handles requests
 const app = express();
 const PORT = process.env.PORT || 5000;
 
