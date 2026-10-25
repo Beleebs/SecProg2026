@@ -75,3 +75,26 @@ CREATE TABLE audit_logs (
     outcome TEXT NOT NULL,
     details JSONB
 );
+
+-- Initial Values
+INSERT INTO rooms (room_name, capacity, employees_only)
+VALUES 
+('lobby', 100, FALSE),  -- index 1
+('room1', 30, FALSE),   -- index 2
+('room2', 30, FALSE),   -- index 3
+('room3', 30, FALSE),   -- index 4
+('room4', 25, FALSE),   -- index 5
+('room5', 15, FALSE),   -- index 6
+('storage', 5, TRUE);   -- index 7
+
+-- Room Connections
+INSERT INTO room_connection (room1_id, room2_id)
+VALUES 
+(1,2), (2,1),
+(1,3), (3,1),
+(1,4), (4,1),
+(2,6), (6,2),
+(4,5), (5,4),
+(3,5), (5,3),
+(3,7), (7,3),
+(6,7), (7,6);

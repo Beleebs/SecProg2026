@@ -29,9 +29,19 @@ app.get('/api/db-check', async (req, res) => {
     try {
         console.log(`Received db request from user`);
         const result = await pool.query('SELECT current_database() AS database');
+
+        const tablesResult = await pool.query(`
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+            AND table_type = 'BASE TABLE'
+            ORDER BY table_name;
+        `);
+        
         res.status(200).json({
             message: 'Database connection successful',
-            database: result.rows[0].database
+            database: result.rows[0].database,
+            tables: tablesResult.rows.map(row => row.table_name)
         });
     }
     catch (error) {

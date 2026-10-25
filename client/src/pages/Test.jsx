@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-function App() {
+function Test() {
   const [data, setData] = useState(null);
   const [dbdata, setDBData] = useState(null);
 
@@ -27,13 +27,13 @@ function App() {
 
   return (
     <>
-      <h1>Title</h1>
+      <h1>Test Page</h1>
       <button onClick={handleButtonClick}>Ping Server:</button>
-      {data && <p>{JSON.stringify(data, null)}</p>}
+      {data && <pre>{JSON.stringify(data, null)}</pre>}
       <button onClick={handleButtonClickDB}>Get Database:</button>
-      {dbdata && <p>{JSON.stringify(dbdata, null)}</p>}
+      {dbdata && <pre>{JSON.stringify(dbdata, null, 1)}</pre>}
     </>
   )
 }
 
-export default App
+export default Test
