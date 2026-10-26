@@ -3,6 +3,7 @@ import { useState } from 'react'
 function Test() {
   const [data, setData] = useState(null);
   const [dbdata, setDBData] = useState(null);
+  const [dbquery, setDBQuery] = useState(null);
 
   // 1. GET Request: Fetching data on component load
   const handleButtonClick = async () => {
@@ -25,15 +26,29 @@ function Test() {
     }
   };
 
+  const handleButtonClickDBQuery = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/db-query');
+      const result = await response.json();
+      setDBQuery(result);
+    } catch (error) {
+      console.error("Failed to fetch: ", error);
+    }
+  };
+
   return (
     <>
       <h1>Test Page</h1>
       <button onClick={handleButtonClick}>Ping Server:</button>
       {data && <pre>{JSON.stringify(data, null)}</pre>}
+      <br />
       <button onClick={handleButtonClickDB}>Get Database:</button>
       {dbdata && <pre>{JSON.stringify(dbdata, null, 1)}</pre>}
+      <br />
+      <button onClick={handleButtonClickDBQuery}>Query Database:</button>
+      {dbquery && <pre>{JSON.stringify(dbquery, null, 1)}</pre>}
     </>
   )
 }
 
-export default Test
+export default Test;

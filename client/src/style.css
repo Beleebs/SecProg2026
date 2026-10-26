@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Faculty+Glyphic&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: "Faculty Glyphic", Helvetica, Arial, sans-serif;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-left: 0.85rem;
+    background-color: black;
+}
+
+nav a {
+    color: #f8fafc;
+    text-decoration: none;
+}
+
+nav > a {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+nav ul {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 1rem;
+    list-style: none;
+}
+
+nav li a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.35rem;
+}
+
+.index-page {
+    display: flex;
+    background-color:rgb(255, 227, 191);
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.index {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.index-title {
+    font-size: 10rem;
+    margin: 0;
+}
+
+.index > a {
+    text-decoration: none;
+}
+
+.index-button {
+    color: white;
+    background-color: black;
+    border: none;
+    border-radius: 20px;
+    padding: 0.8rem 2.2rem;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
+.login-form form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: min(100%, 20rem);
+}
+
+.register-form form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: min(100%, 20rem);
+}
+
+.home-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.home-content {
+    display: grid;
+    flex: 1;
+    place-items: center;
+}
+
+.acc-login-component {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10rem;
+}
+
+.acc-login-signin {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 20rem;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 5px 5px 10px;
+    gap: 1rem;
+}
+
+.acc-login-option {
+    width: 100%;
+    padding: 0.5rem 1rem;
+}
+
+.acc-login-option a {
+    display: block;
+}
+
+.acc-login-button {
+    display: block;
+    width: 100%;
+    color: white;
+    background-color: black;
+    border: none;
+    border-radius: 20px;
+    padding: 0.8rem 2.2rem;
+    cursor: pointer;
+    font-size: 1rem;
+}

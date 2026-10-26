@@ -50,6 +50,21 @@ app.get('/api/db-check', async (req, res) => {
     }
 });
 
+app.get('/api/db-query', async (req, res) => {
+    try {
+        console.log(`Received db query request from user`);
+        const result = await pool.query(`SELECT * FROM rooms`);
+
+        res.status(200).json({
+            contents: result.rows
+        });
+    }
+    catch (error) {
+        console.error('Failed Database Query:', error);
+        res.status(503).json({ error: 'Database unavailable' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
