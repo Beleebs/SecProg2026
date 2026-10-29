@@ -32,7 +32,6 @@ services:
       - /app/node_modules
     depends_on:
       - server
-    
 
 volumes:
   postgres_data:

@@ -58,3 +58,9 @@ docker compose down
 docker compose down -v
 ```
 
+
+## To add images to Data volume
+
+```bash
+docker cp "./images" secprog2026-server-1:data/
+```

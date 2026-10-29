@@ -3,7 +3,7 @@
 
 CREATE TABLE users (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    username TEXT NOT NULL,
+    email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     user_role TEXT NOT NULL DEFAULT 'guest',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -44,9 +44,16 @@ CREATE TABLE room_connection (
     PRIMARY KEY (room1_id, room2_id)
 );
 
+CREATE TABLE gallery_events (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    person_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    room_id INTEGER REFERENCES rooms(id) ON DELETE RESTRICT,
+    event_date DATE
+);
+
 CREATE TABLE art (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    room_id INTEGER REFERENCES rooms(id) ON DELETE RESTRICT,
+    event_id INTEGER REFERENCES gallery_events(id) ON DELETE RESTRICT,
     posted_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     image_path TEXT NOT NULL,
     art_name TEXT NOT NULL,
@@ -92,22 +99,34 @@ CREATE TABLE audit_logs (
         (6,7), (7,6);
 
 -- User
-    INSERT INTO users (username, password_hash, user_role, is_active)
+    INSERT INTO users (email, password_hash, user_role, is_active)
     VALUES
-        ('user1', 'passwordtemp', 'regUser', false),
-        ('user2', 'passwordtemp', 'employee', false),
-        ('user3', 'passwordtemp', 'admin', false);
+        ('user@email.com', 'passwordtemp', 'regUser', false),
+        ('employ@email.com', 'passwordtemp', 'employee', false),
+        ('admin@email.com', 'passwordtemp', 'admin', false);
+
+-- Gallery Events
+    INSERT INTO gallery_events (person_id, room_id, event_date)
+    VALUES
+        (1, 2, null),
+        (1, 3, null),
+        (1, 4, null),
+        (1, 5, null),
+        (1, 6, null),
+        (1, 3, '2026-10-29');
 
 -- Images
-    INSERT INTO art (room_id, posted_by, image_path, art_name, art_description, artist, art_creation_date)
+    INSERT INTO art (event_id, posted_by, image_path, art_name, art_description, artist, art_creation_date)
     VALUES
-        (2, 1, 'image1.png' , 'image1' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (2, 1, 'image1.png' , 'image2' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (3, 1, 'image3.png' , 'image3' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (3, 1, 'image4.png' , 'image4' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (4, 1, 'image5.png' , 'image5' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (4, 1, 'image6.png' , 'image6' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (5, 1, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (5, 1, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (6, 1, 'image9.png' , 'image9' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (6, 1, 'image10.png', 'image10', 'desc', 'artistNameStandIn', '2026-10-28');
+        (1, 1, 'image1.png' , 'image1' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (1, 1, 'image1.png' , 'image2' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (2, 1, 'image3.png' , 'image3' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (2, 1, 'image4.png' , 'image4' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (3, 1, 'image5.png' , 'image5' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (3, 1, 'image6.png' , 'image6' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (4, 1, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (4, 1, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (5, 1, 'image9.png' , 'image9' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (5, 1, 'image10.png', 'image10', 'desc', 'artistNameStandIn', '2026-10-28'),
+        (6, 1, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (6, 1, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28');
