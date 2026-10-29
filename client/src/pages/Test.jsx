@@ -96,8 +96,8 @@ function Test() {
     try {
       console.log("test reg");
       const obj = {
-        email: "email@email.com",
-        password: "testingTesting",
+        email: "email3@email.com",
+        password: "password",
       }
 
       const options = {

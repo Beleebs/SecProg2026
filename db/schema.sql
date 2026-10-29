@@ -101,9 +101,9 @@ CREATE TABLE audit_logs (
 -- User
     INSERT INTO users (email, password_hash, user_role, is_active)
     VALUES
-        ('user@email.com', 'passwordtemp', 'regUser', false),
-        ('employ@email.com', 'passwordtemp', 'employee', false),
-        ('admin@email.com', 'passwordtemp', 'admin', false);
+        ('user@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'regUser', false),
+        ('employ@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'employee', false),
+        ('admin@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'admin', false);
 
 -- Gallery Events
     INSERT INTO gallery_events (person_id, room_id, event_date)

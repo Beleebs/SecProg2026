@@ -45,7 +45,13 @@ app.post('/api/db-register',
             return res.status(400).json({ errors: errors.array() });
         }
 
-        console.log(req.body.email + " " + req.body.password);
+        const user_email_check = await pool.query(`select count(*) from users u where u.email = $1`, [req.body.email]);
+        console.log(user_email_check.rows[0]['count']);
+
+        if (user_email_check.rows[0]['count'] !== '0'){
+            console.log('email fail');
+            return res.status(400).json({ errors: 'Account already attached to email' });
+        }
 
         bcrypt.genSalt(saltRounds, function(err, salt) {
             bcrypt.hash(req.body.password, salt, async function (err, hash) {
@@ -68,20 +74,35 @@ app.post('/api/db-register',
     }
 });
 
-app.post('/api/db-login', async (req, res) => {
-    try {
-        console.log(req.body.name + " " + req.body.pass);
-        const result = await pool.query(`SELECT * FROM rooms`);
+app.post('/api/db-register',
+    [
+        [
+            body('email').isEmail(),
+            body('password').notEmpty(),
+        ],
+    ],
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty())
+            {
+                return res.status(400).json({ errors: errors.array() });
+            }
 
-        res.status(200).json({
-            contents: result.rows
-        });
-    }
-    catch (error) {
-        console.error('Failed Database Query:', error);
-        res.status(503).json({ error: 'Database unavailable' });
-    }
-});
+            console.log(req.body.email + " " + req.body.password);
+
+
+
+            res.status(200).json({
+                contents: "Registered Successfully"
+            });
+
+        }
+        catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(403).json({ error: 'Database unavailable' });
+        }
+    });
 
 app.get('/api/get-rooms', async (req, res) => {
     try {
