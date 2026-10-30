@@ -8,11 +8,22 @@ function Test() {
   const [image3, setImage3] = useState(null);
   const [regRes, setRegRes] = useState(null);
   const [loginRes, setLoginRes] = useState(null);
+  const [events, setEvents] = useState(null);
+  const [event, setEvent] = useState(null);
 
   // 1. GET Request: Fetching data on component load
   const handleButtonClick = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/get-rooms');
+      const authHeader = localStorage.getItem('token');
+
+      const options = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+      }
+      const response = await fetch('http://localhost:5000/api/get-rooms', options);
       const result = await response.json();
       setData(result);
     } catch (error) {
@@ -25,10 +36,13 @@ function Test() {
       const obj = {
         room: "6",
       }
+      const authHeader = localStorage.getItem('token');
+
       const options = {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
         },
         body: JSON.stringify(obj)
       }
@@ -122,7 +136,7 @@ function Test() {
     try {
       console.log("test reg");
       const obj = {
-        email: "user@email.com",
+        email: "admin@email.com",
         password: "password",
       }
 
@@ -137,7 +151,52 @@ function Test() {
       console.log(options);
       const response = await fetch('http://localhost:5000/api/db-login', options);
       const result = await response.json();
+      localStorage.setItem("token", result["token"]);
       setLoginRes(result);
+    } catch (error) {
+      console.error("Failed to fetch: ", error);
+    }
+  };
+
+  const eventsFetch = async () => {
+    try {
+      const authHeader = localStorage.getItem('token');
+
+      const options = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        }
+      }
+      const response = await fetch('http://localhost:5000/api/fetch-events', options);
+
+      const result = await response.json();
+      setEvents(result);
+    } catch (error) {
+      console.error("Failed to fetch: ", error);
+    }
+  };
+
+  const eventFetch = async () => {
+    try {
+      const authHeader = localStorage.getItem('token');
+      const obj = {
+        event: "6",
+      }
+
+      const options = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+        body: JSON.stringify(obj)
+      }
+      const response = await fetch('http://localhost:5000/api/fetch-event', options);
+
+      const result = await response.json();
+      setEvent(result);
     } catch (error) {
       console.error("Failed to fetch: ", error);
     }
@@ -167,6 +226,14 @@ function Test() {
       <button onClick={testLogin}>Query Login:</button>
       <br />
       {loginRes && <pre>{JSON.stringify(loginRes, null, 1)}</pre>}
+      <br />
+      <button onClick={eventsFetch}>Query Events:</button>
+      <br />
+      {events && <pre>{JSON.stringify(events, null, 1)}</pre>}
+      <br />
+      <button onClick={eventFetch}>Query Event:</button>
+      <br />
+      {event && <pre>{JSON.stringify(event, null, 1)}</pre>}
       <br />
     </>
   )

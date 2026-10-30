@@ -8,15 +8,9 @@ CREATE TABLE users (
     user_role TEXT NOT NULL DEFAULT 'guest'
 );
 
-CREATE TABLE session (
-    "sid" varchar UNIQUE NOT NULL COLLATE "default",
-    "sess" json NOT NULL,
-    "expire" timestamp(6) NOT NULL
-) WITH (OIDS=FALSE);
-
 CREATE TABLE persons (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    session_id VARCHAR UNIQUE REFERENCES session(sid) ON DELETE CASCADE,
+    token VARCHAR NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -41,7 +35,7 @@ CREATE TABLE room_connection (
 
 CREATE TABLE gallery_events (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    person_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     room_id INTEGER REFERENCES rooms(id) ON DELETE RESTRICT,
     event_date DATE
 );
@@ -94,19 +88,19 @@ CREATE TABLE audit_logs (
 -- User
     INSERT INTO users (email, password_hash, user_role)
     VALUES
-        ('user@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'regUser'),
+        ('user@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'guest'),
         ('employ@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'employee'),
         ('admin@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'admin');
 
 -- Gallery Events
-    INSERT INTO gallery_events (person_id, room_id, event_date)
+    INSERT INTO gallery_events (user_id, room_id, event_date)
     VALUES
-        (1, 2, null),
-        (1, 3, null),
-        (1, 4, null),
-        (1, 5, null),
-        (1, 6, null),
-        (1, 3, '2026-10-29');
+        (3, 2, null),
+        (3, 3, null),
+        (3, 4, null),
+        (3, 5, null),
+        (3, 6, null),
+        (3, 3, '2026-10-29');
 
 -- Images
     INSERT INTO art (event_id, posted_by, image_path, art_name, art_description, artist, art_creation_date)
@@ -123,7 +117,3 @@ CREATE TABLE audit_logs (
         (5, 1, 'image10.png', 'image10', 'desc', 'artistNameStandIn', '2026-10-28'),
         (6, 1, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
         (6, 1, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28');
-
-ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
-
-CREATE INDEX "IDX_session_expire" ON "session" ("expire");
