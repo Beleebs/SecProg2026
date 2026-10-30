@@ -19,7 +19,6 @@ const pool = new Pool({
 
 const saltRounds = 10;
 
-const upload = multer({dest: 'data/images/'});
 
 // app handles requests
 const app = express();
@@ -28,6 +27,16 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+
+const storage = multer.diskStorage({
+    destination: (req, file, callBack) => {
+        callBack(null, 'uploads')
+    },
+    filename: (req, file, callBack) => {
+        callBack(null, `${file.originalname}`)
+    }
+})
+let upload = multer({dest: '/data/images/'})
 
 app.get('/api/message', (req, res) => {
     console.log(`Received request from user`);
@@ -393,31 +402,49 @@ app.post('/api/get-images',
         }
     });
 
-app.post('/api/Edit-Event',
+app.post('/api/edit-event',
     [
         [
-            body('user_id').isNumeric(),
+            body('id').isNumeric(),
             body('room_id').isNumeric(),
             body('date').isDate(),
         ],
     ],
-    async (req, res) => {
+    authenticateToken, async (req, res) => {
         try {
+            console.log(req.body)
             const errors = validationResult(req);
+            console.log(errors);
             if (!errors.isEmpty()) {
                 return res.status(400).json({errors: errors.array()});
             }
 
-            const event = await pool.query(`update event
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin' || getUserPerms.rows[0]['user_role'] === 'employee')) {
+                return res.status(400).json({errors: 'Employee Only Operation'});
+            }
+
+            const eventCount = await pool.query(`select count(*)
+                                                 from gallery_events ge where ge.event_date = $1 and ge.room_id = $2`, [req.body.date, req.body.room_id]);
+
+            if(!(eventCount.rows[0]['count'] === '0'))
+            {
+                return res.status(400).json({errors: "Event already in room and on date"});
+            }
+
+            const event = await pool.query(`update gallery_events
                                             set user_id = $1,
                                                 room_id = $2,
-                                                date    = $3
-                                            where user_id = $1`, [req.body.user_id, req.body.room_id, req.body.date]);
+                                                event_date    = $3
+                                            where id = $4`, [req.user['userId'], req.body.room_id, req.body.date, req.body.id]);
 
             console.log(event);
 
             res.status(200).json({
-                contents: event.rows
+                contents: "Updated Event" + req.body.id
             });
         } catch (error) {
             console.error('Failed Database Query:', error);
@@ -425,25 +452,88 @@ app.post('/api/Edit-Event',
         }
     });
 
-app.post('/api/Upload-Event',
+app.post('/api/upload-event',
     [
         [
-            body('user_id').isNumeric(),
             body('room_id').isNumeric(),
-            body('date').isDate(),
+            body('date').isString(),
         ],
     ],
-    async (req, res) => {
+    authenticateToken, async (req, res) => {
         try {
+
             const errors = validationResult(req);
+            console.log(errors);
             if (!errors.isEmpty()) {
                 return res.status(400).json({errors: errors.array()});
             }
 
-            const event = await pool.query(`insert into events (user_id, room_id, date)
-                                            values ($1, $2, $3)`, [req.body.user_id, req.body.room_id, req.body.date]);
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin' || getUserPerms.rows[0]['user_role'] === 'employee')) {
+                return res.status(400).json({errors: 'Employee Only Operation'});
+            }
+
+            const eventCount = await pool.query(`select count(*)
+                                              from gallery_events ge where ge.event_date = $1 and ge.room_id = $2`, [req.body.date, req.body.room_id]);
+
+            if(!(eventCount.rows[0]['count'] === '0'))
+            {
+                return res.status(400).json({errors: "Event already in room and on date"});
+            }
+
+            const event = await pool.query(`insert into gallery_events (user_id, room_id, event_date)
+                                            values ($1, $2,
+                                                    $3)`, [req.user['userId'], req.body.room_id, req.body.date]);
 
             console.log(event);
+
+            res.status(200).json({
+                contents: "Created Event"
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/upload-image', upload.single('image'),
+    [
+        [
+            body('event_id').isNumeric(),
+            body('posted_by').isNumeric(),
+            body('art_name').isString(),
+            body('desc').isString(),
+            body('artist').isString(),
+            body('date').isString(),
+        ],
+    ],
+    authenticateToken, async (req, res) => {
+        try {
+
+            const errors = validationResult(req);
+            console.log(errors);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({errors: errors.array()});
+            }
+
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin' || getUserPerms.rows[0]['user_role'] === 'employee')) {
+                return res.status(400).json({errors: 'Employee Only Operation'});
+            }
+
+
+            const event = await pool.query(`insert into art (event_id, posted_by, image_path, art_name, art_description,
+                                                             artist,
+                                                             art_creation_date)
+                                            values ($1, $2, $3, $4, $5, $6,
+                                                    $7)`, [req.body.event_id, req.user['userId'], req.file.filename, req.body.art_name,
+                req.body.desc, req.body.artist, req.body.date]);
 
             res.status(200).json({
                 contents: event.rows
@@ -452,41 +542,7 @@ app.post('/api/Upload-Event',
             console.error('Failed Database Query:', error);
             res.status(503).json({error: 'Service unavailable'});
         }
-    });
-
-/*app.post('/api/upload-image', upload.single('image'), async (req, res) => {
-
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({errors: errors.array()});
-        }
-
-        const event = await pool.query(`insert into art (event_id, posted_by, image_path, art_name, art_description,
-                                                         artist,
-                                                         art_creation_date)
-                                        values ($1, $2, $3, $4, $5, $6,
-                                                $7)`, [req.body.event_id, req.user['userId'], req.body.image_path, req.body.image_name,
-                                                        req.body.desc, req.body.artist, req.body.date,]);
-
-        res.status(200).json({
-            contents: event.rows
-        });
-    } catch (error) {
-        console.error('Failed Database Query:', error);
-        res.status(503).json({error: 'Service unavailable'});
-    }
-
-});*/
-
-app.post('/api/images', upload.single('image'), (req, res) => {
-    const imageName = req.file.filename
-    const description = req.body.description
-
-    // Save this data to a database probably
-
-    console.log(description, imageName)
-})
+    })
 
 app.post('/api/remove-image', [
     [
