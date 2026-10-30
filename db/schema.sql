@@ -2,17 +2,21 @@
 -- NEEDS MORE CONSTRAINTS FOR PROPER USAGE
 
 CREATE TABLE users (
-    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id INTEGER UNIQUE GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
-    user_role TEXT NOT NULL DEFAULT 'guest',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN NOT NULL DEFAULT FALSE
+    user_role TEXT NOT NULL DEFAULT 'guest'
 );
 
+CREATE TABLE session (
+    "sid" varchar UNIQUE NOT NULL COLLATE "default",
+    "sess" json NOT NULL,
+    "expire" timestamp(6) NOT NULL
+) WITH (OIDS=FALSE);
+
 CREATE TABLE persons (
-    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    u_id INTEGER UNIQUE REFERENCES users(id) ON DELETE RESTRICT,
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    session_id VARCHAR UNIQUE REFERENCES session(sid) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -24,18 +28,9 @@ CREATE TABLE rooms (
 );
 
 CREATE TABLE person_state (
-    person_id INTEGER PRIMARY KEY REFERENCES persons(id) ON DELETE RESTRICT,
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     in_gallery BOOLEAN NOT NULL DEFAULT FALSE,
-    current_room_id INTEGER REFERENCES rooms(id) ON DELETE RESTRICT,
-    last_action_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE person_session (
-    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    person_id INTEGER REFERENCES persons(id) ON DELETE RESTRICT,
-    token_hash TEXT NOT NULL UNIQUE,
-    token_expiration_at TIMESTAMPTZ NOT NULL,
-    last_action_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP 
+    current_room_id INTEGER REFERENCES rooms(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE room_connection (
@@ -59,14 +54,12 @@ CREATE TABLE art (
     art_name TEXT NOT NULL,
     art_description TEXT,
     artist TEXT NOT NULL,
-    art_creation_date DATE,
-    art_posted_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    art_creation_date DATE
 );
 
 CREATE TABLE audit_logs (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    actor_person_id INTEGER REFERENCES persons(id) ON DELETE RESTRICT,
     actor_user_id INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     action_type TEXT NOT NULL,
     target_type TEXT,
@@ -99,11 +92,11 @@ CREATE TABLE audit_logs (
         (6,7), (7,6);
 
 -- User
-    INSERT INTO users (email, password_hash, user_role, is_active)
+    INSERT INTO users (email, password_hash, user_role)
     VALUES
-        ('user@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'regUser', false),
-        ('employ@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'employee', false),
-        ('admin@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'admin', false);
+        ('user@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'regUser'),
+        ('employ@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'employee'),
+        ('admin@email.com', '$2b$10$K9rWwySniTgRgvsRTanpfOoyR.ObpNKELhMAwKOGfyGtsfm4ASmoK', 'admin');
 
 -- Gallery Events
     INSERT INTO gallery_events (person_id, room_id, event_date)
@@ -130,3 +123,7 @@ CREATE TABLE audit_logs (
         (5, 1, 'image10.png', 'image10', 'desc', 'artistNameStandIn', '2026-10-28'),
         (6, 1, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
         (6, 1, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28');
+
+ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+
+CREATE INDEX "IDX_session_expire" ON "session" ("expire");

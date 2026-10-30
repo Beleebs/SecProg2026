@@ -7,6 +7,7 @@ function Test() {
   const [image2, setImage2] = useState(null);
   const [image3, setImage3] = useState(null);
   const [regRes, setRegRes] = useState(null);
+  const [loginRes, setLoginRes] = useState(null);
 
   // 1. GET Request: Fetching data on component load
   const handleButtonClick = async () => {
@@ -110,9 +111,33 @@ function Test() {
 
       console.log(options);
       const response = await fetch('http://localhost:5000/api/db-register', options);
-      const result = await response.blob();
-      let objectURL = URL.createObjectURL(result);
-      setImage(objectURL);
+      const result = await response.json();
+      setRegRes(result);
+    } catch (error) {
+      console.error("Failed to fetch: ", error);
+    }
+  };
+
+  const testLogin = async () => {
+    try {
+      console.log("test reg");
+      const obj = {
+        email: "user@email.com",
+        password: "password",
+      }
+
+      const options = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(obj)
+      }
+
+      console.log(options);
+      const response = await fetch('http://localhost:5000/api/db-login', options);
+      const result = await response.json();
+      setLoginRes(result);
     } catch (error) {
       console.error("Failed to fetch: ", error);
     }
@@ -134,10 +159,15 @@ function Test() {
       <button onClick={imageFetch}>Query Image:</button>
       <br />
       <img src={image}></img>
-`      <br/>
-      <button onClick={testReg}>Query Image:</button>
+      <br/>
+      <button onClick={testReg}>Query Reg:</button>
       <br />
       {regRes && <pre>{JSON.stringify(regRes, null, 1)}</pre>}
+      <br />
+      <button onClick={testLogin}>Query Login:</button>
+      <br />
+      {loginRes && <pre>{JSON.stringify(loginRes, null, 1)}</pre>}
+      <br />
     </>
   )
 }
