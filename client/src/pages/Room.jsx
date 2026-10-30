@@ -2,12 +2,15 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar";
+import ArtCard from "../components/ArtCard";
 
 function Room() {
     const { roomId } = useParams();
     const [roomData, setRoomData] = useState(null);
     const [roomError, setRoomError] = useState("");
     const [adjRooms, setAdjRooms] = useState(null);
+    const [navError, setNavError] = useState("");
+    const [artData, setArtData] = useState(null);
 
     const nav = useNavigate();
 
@@ -19,9 +22,33 @@ function Room() {
         async function loadRoom() {
             setRoomData(null);
             setRoomError("");
+            setNavError("");
+            setArtData(null);
+            const token = localStorage.getItem("token");
+
+            const headers = {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
 
             try {
-                const roomResponse = await fetch("/api/get-rooms");
+                const body = {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ room: Number(roomId) })
+                }
+                const enterResponse = await fetch("/api/enter-room", body);
+                const enterResult = await enterResponse.json();
+
+                if (!enterResponse.ok) {
+                    throw new Error(enterResult.errors || "Failed to get room data");
+                }
+
+                const roomResponse = await fetch("/api/get-rooms", headers);
                 const roomResult = await roomResponse.json();
 
                 if (!roomResponse.ok) {
@@ -40,30 +67,18 @@ function Room() {
 
                 if (!cancelled) {
                     setRoomData(room);
-                    const body = {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({ room: room.id })
-                    }
 
                     const connectionResponse = await fetch("/api/get-room-connections", body);
+                    console.log(connectionResponse);
                     const connectionResult = await connectionResponse.json();
-
-                    const enterResponse = await fetch("/api/enter-room", body);
-                    const enterResult = await enterResponse.json();
 
                     if (!connectionResponse.ok) {
                         throw new Error(connectionResult.error || "Failed to load adjacent rooms");
                     }
 
-                    if (!enterResponse.ok) {
-                        throw new Error(enterResult.error || "Failed to get room data");
-                    }
-
                     console.log(connectionResult);
                     console.log(enterResult);
+                    setArtData(enterResult.contents);
 
                     const roomsById = new Map(
                         roomResult.contents.map((room) => [Number(room.id), room])
@@ -84,7 +99,7 @@ function Room() {
             } catch (error) {
                 if (!cancelled) {
                     setRoomError(error.message);
-                }
+                } 
             }
         }
 
@@ -95,26 +110,39 @@ function Room() {
     }, [roomId]);
 
     // click on one of the adjacent rooms
-    const handleRoomNavigate = async (e) => {
-        nav(`/room/` + e.target.id);
+    const handleRoomNavigate = async (destination) => {
+        nav(`/room/${destination}`);
     };
 
     return (
         <div>
             <Navbar />
-            {roomError && <p role="alert">{roomError}</p>}
+            {roomError && (
+                <>
+                    <p role="alert">{roomError}</p>
+                    <button onClick={() => handleRoomNavigate(1)}>Back to Lobby</button>
+                </>
+            )}
             {!roomError && !roomData && <p>Loading room...</p>}
             {roomData && (
-                <main>
-                    <h1>Room: {roomData.room_name}</h1>
-                    <p>Capacity: {roomData.capacity}</p>
-                    <br />
-                    <h2>Adjacent Rooms:</h2>
-                    {adjRooms && adjRooms.map((room) => (
-                        <button id={room.id} key={room.id} onClick={handleRoomNavigate}>{room.name}</button>
-                    ))}
+                <div>
+                    <div>
+                        <h1>Room: {roomData.room_name}</h1>
+                        <p>Capacity: {roomData.capacity}</p>
+                        <br />
+                        <h2>Adjacent Rooms:</h2>
+                        {adjRooms && adjRooms.map((room) => (
+                            <button id={room.id} key={room.id} onClick={() => handleRoomNavigate(room.id)}>{room.name}</button>
+                        ))}
+                        {navError && <p role="alert">{navError}</p>}
+                    </div>
 
-                </main>
+                    <div>
+                        {artData && artData.map((art) => (
+                            <ArtCard key={art.id} artData={art} />
+                        ))}
+                    </div>
+                </div>
             )}
         </div>
     );

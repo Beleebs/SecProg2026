@@ -9,7 +9,7 @@ services:
     depends_on:
       - db
     volumes:
-      - image_data:/data/images
+      - ./server/images:/data/images:ro
 
   db:
     image: postgres:17

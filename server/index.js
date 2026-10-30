@@ -208,6 +208,20 @@ app.get('/api/get-rooms', authenticateToken, async (req, res) => {
     }
 });
 
+app.post('/api/get-room-connections', authenticateToken, async (req, res) => {
+    try {
+        console.log(`Received db query request from user`);
+        const result = await pool.query(`SELECT * FROM room_connection WHERE room1_id = $1`, [req.body.room]);
+
+        res.status(200).json({
+            contents: result.rows
+        });
+    } catch (error) {
+        console.error('Failed Database Query:', error);
+        res.status(503).json({error: 'Service unavailable'});
+    }
+});
+
 app.post('/api/enter-room',
     [
         [
@@ -246,7 +260,7 @@ app.post('/api/enter-room',
             console.log(roomPerms.rows[0]['employees_only']);
             console.log(getUserPerms);
             if (getUserPerms.rows[0]['user_role'] === 'guest' && roomPerms.rows[0]['employees_only'] === true) {
-                return res.status(400).json({errors: 'Enployees Only'});
+                return res.status(400).json({errors: 'Employees Only'});
             }
 
 
@@ -259,14 +273,22 @@ app.post('/api/enter-room',
             let images;
 
             if (event_id.rows.length !== 0) {
-                images = await pool.query(`select a.image_path, a.art_name, a.art_description, a.artist
+                images = await pool.query(`select a.id, a.image_path, a.art_name, a.art_description, a.artist
                                            from art a
                                            where a.event_id = $1`, [event_id.rows[0]['id']]);
             } else {
                 const default_event = await pool.query(`select ge.id
                                                         from gallery_events ge
                                                         where ge.room_id = $1`, [req.body.room]);
-                images = await pool.query(`select a.image_path, a.art_name, a.art_description, a.artist
+                
+                // also need to check if there actually is an event
+                if (default_event.rows.length === 0) {
+                    return res.status(200).json({ 
+                        contents: []
+                    })
+                }
+
+                images = await pool.query(`select a.id, a.image_path, a.art_name, a.art_description, a.artist
                                            from art a
                                            where a.event_id = $1`, [default_event.rows[0]['id']]);
             }
