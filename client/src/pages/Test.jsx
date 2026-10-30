@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import axios from "axios";
 
 function Test() {
   const [data, setData] = useState(null);
@@ -10,6 +11,9 @@ function Test() {
   const [loginRes, setLoginRes] = useState(null);
   const [events, setEvents] = useState(null);
   const [event, setEvent] = useState(null);
+  const [file, setFile] = useState()
+  const [description, setDescription] = useState("")
+  const [imageName, setImageName] = useState()
 
   // 1. GET Request: Fetching data on component load
   const handleButtonClick = async () => {
@@ -202,6 +206,20 @@ function Test() {
     }
   };
 
+  const submit = async event => {
+    event.preventDefault()
+
+    const formData = new FormData()
+    formData.append("event_id", 1);
+    formData.append("image_path", file);
+    formData.append("desc", description);
+    formData.append("artist", "testArtist");
+    formData.append("date", new Date().toISOString().slice(0, 10));
+
+    const result = await axios.post('/api/upload-image', formData, { headers: {'Content-Type': 'multipart/form-data'}})
+    setImageName(result.data.imageName)
+  }
+
   return (
     <>
       <h1>Test Page</h1>
@@ -235,6 +253,20 @@ function Test() {
       <br />
       {event && <pre>{JSON.stringify(event, null, 1)}</pre>}
       <br />
+
+      <form onSubmit={submit}>
+        <input
+            filename={file}
+            onChange={e => setFile(e.target.files[0])}
+            type="file"
+            accept="image/*"
+        ></input>
+        <input
+            onChange={e => setDescription(e.target.value)}
+            type="text"
+        ></input>
+        <button type="submit">Submit</button>
+      </form>
     </>
   )
 }

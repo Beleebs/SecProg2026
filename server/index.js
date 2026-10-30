@@ -5,6 +5,7 @@ import bcrypt from 'bcrypt'
 import {body, validationResult} from "express-validator";
 import pg from 'pg';
 import jwt from 'jsonwebtoken'
+import multer from 'multer';
 
 const {Pool} = pg;
 // grab things from the env file
@@ -17,6 +18,8 @@ const pool = new Pool({
 });
 
 const saltRounds = 10;
+
+const upload = multer({dest: 'data/images/'});
 
 // app handles requests
 const app = express();
@@ -270,7 +273,7 @@ app.post('/api/fetch-image',
             if (!errors.isEmpty()) {
                 return res.status(400).json({errors: errors.array()});
             }
-            
+
             res.sendFile('/data/images/' + req.body.image);
         } catch (error) {
             console.error('Failed Database Query:', error);
@@ -287,15 +290,13 @@ app.get('/api/fetch-events',
                                                    where u.id = $1`, [req.user['userId']]);
             let event_ids;
 
-            if(getUserPerms.rows[0]['user_role'] === 'admin')
-            {
+            if (getUserPerms.rows[0]['user_role'] === 'admin') {
                 event_ids = await pool.query(`select *
-                                               from gallery_events ge`, []);
-            }
-            else
-            {
+                                              from gallery_events ge`, []);
+            } else {
                 event_ids = await pool.query(`select *
-                                               from gallery_events ge where ge.user_id = $1`, [req.user['userId']]);
+                                              from gallery_events ge
+                                              where ge.user_id = $1`, [req.user['userId']]);
             }
 
             res.status(200).json({
@@ -320,7 +321,9 @@ app.post('/api/fetch-event',
                 return res.status(400).json({errors: errors.array()});
             }
 
-            const event = await pool.query(`select * from gallery_events ge where ge.id = $1`, [req.body.event]);
+            const event = await pool.query(`select *
+                                            from gallery_events ge
+                                            where ge.id = $1`, [req.body.event]);
 
             console.log(event);
 
@@ -332,6 +335,142 @@ app.post('/api/fetch-event',
             res.status(503).json({error: 'Service unavailable'});
         }
     });
+
+app.post('/api/get-images',
+    async (req, res) => {
+        try {
+            const art = await pool.query(`select *
+                                          from art`, []);
+
+            res.status(200).json({
+                contents: art.rows
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/Edit-Event',
+    [
+        [
+            body('user_id').isNumeric(),
+            body('room_id').isNumeric(),
+            body('date').isDate(),
+        ],
+    ],
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({errors: errors.array()});
+            }
+
+            const event = await pool.query(`update event
+                                            set user_id = $1,
+                                                room_id = $2,
+                                                date    = $3
+                                            where user_id = $1`, [req.body.user_id, req.body.room_id, req.body.date]);
+
+            console.log(event);
+
+            res.status(200).json({
+                contents: event.rows
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/Upload-Event',
+    [
+        [
+            body('user_id').isNumeric(),
+            body('room_id').isNumeric(),
+            body('date').isDate(),
+        ],
+    ],
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({errors: errors.array()});
+            }
+
+            const event = await pool.query(`insert into events (user_id, room_id, date)
+                                            values ($1, $2, $3)`, [req.body.user_id, req.body.room_id, req.body.date]);
+
+            console.log(event);
+
+            res.status(200).json({
+                contents: event.rows
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+/*app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const event = await pool.query(`insert into art (event_id, posted_by, image_path, art_name, art_description,
+                                                         artist,
+                                                         art_creation_date)
+                                        values ($1, $2, $3, $4, $5, $6,
+                                                $7)`, [req.body.event_id, req.user['userId'], req.body.image_path, req.body.image_name,
+                                                        req.body.desc, req.body.artist, req.body.date,]);
+
+        res.status(200).json({
+            contents: event.rows
+        });
+    } catch (error) {
+        console.error('Failed Database Query:', error);
+        res.status(503).json({error: 'Service unavailable'});
+    }
+
+});*/
+
+app.post('/api/images', upload.single('image'), (req, res) => {
+    const imageName = req.file.filename
+    const description = req.body.description
+
+    // Save this data to a database probably
+
+    console.log(description, imageName)
+})
+
+app.post('/api/remove-image', [
+    [
+        body('id').isNumeric(),
+    ],
+], upload.single('image'), async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const event = await pool.query(`delete
+                                        from art a
+                                        where a.id = $1`, [req.body.id]);
+
+        res.status(200).json({
+            contents: event.rows
+        });
+    } catch (error) {
+        console.error('Failed Database Query:', error);
+        res.status(503).json({error: 'Service unavailable'});
+    }
+
+
+})
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
