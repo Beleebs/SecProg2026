@@ -74,35 +74,35 @@ app.post('/api/db-register',
     }
 });
 
-app.post('/api/db-register',
-    [
-        [
-            body('email').isEmail(),
-            body('password').notEmpty(),
-        ],
-    ],
-    async (req, res) => {
-        try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty())
-            {
-                return res.status(400).json({ errors: errors.array() });
-            }
+// app.post('/api/db-register',
+//     [
+//         [
+//             body('email').isEmail(),
+//             body('password').notEmpty(),
+//         ],
+//     ],
+//     async (req, res) => {
+//         try {
+//             const errors = validationResult(req);
+//             if (!errors.isEmpty())
+//             {
+//                 return res.status(400).json({ errors: errors.array() });
+//             }
 
-            console.log(req.body.email + " " + req.body.password);
+//             console.log(req.body.email + " " + req.body.password);
 
 
 
-            res.status(200).json({
-                contents: "Registered Successfully"
-            });
+//             res.status(200).json({
+//                 contents: "Registered Successfully"
+//             });
 
-        }
-        catch (error) {
-            console.error('Failed Database Query:', error);
-            res.status(403).json({ error: 'Database unavailable' });
-        }
-    });
+//         }
+//         catch (error) {
+//             console.error('Failed Database Query:', error);
+//             res.status(403).json({ error: 'Database unavailable' });
+//         }
+//     });
 
 app.get('/api/get-rooms', async (req, res) => {
     try {

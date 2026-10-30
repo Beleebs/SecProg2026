@@ -8,7 +8,9 @@ import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Account from './pages/Account.jsx'
 import About from './pages/About.jsx'
+import Room from './pages/Room.jsx'
 import './style.css'
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -21,6 +23,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/register" element={<Register/>}></Route>
         <Route path="/account" element={<Account/>}></Route>
         <Route path="/about" element={<About/>}></Route>
+        <Route path="/room" element={<Room/>}></Route>
       </Routes>
     </BrowserRouter>
   </StrictMode>
