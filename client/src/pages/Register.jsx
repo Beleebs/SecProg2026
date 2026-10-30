@@ -36,7 +36,7 @@ function Register() {
             console.log(result.contents);
             setRegSuccess(result.contents);
             if (response.ok) {
-                nav("/room/lobby", { replace: true }); // default to lobby
+                nav("/login", { replace: true }); // navigate to login
             }
 
         } catch (error) {

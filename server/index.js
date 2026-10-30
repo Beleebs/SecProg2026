@@ -53,6 +53,24 @@ function authenticateToken(req, res, next) {
     }
 }
 
+app.get('/api/me', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT * FROM users u WHERE u.id = $1`, [req.user.userId]);
+        if (!result) {
+            return res.status(404).json({error: 'User not found'}); 
+        }
+
+        return res.status(200).json({
+            email: result.rows[0].email,
+            role: result.rows[0].user_role
+        });
+
+    } catch (error) {
+        console.error('Failed Database Query:', error);
+        res.status(403).json({error: 'Database unavailable'});
+    }
+});
+
 app.post('/api/db-register',
     [
         [
@@ -116,7 +134,7 @@ app.post('/api/db-login',
                                                       where u.email = $1`, [req.body.email]);
 
             if (hashed_password.rows.length === 0) {
-                res.status(400).json({
+                return res.status(400).json({
                     errors: "Incorrect Email or Password"
                 });
             }
@@ -128,6 +146,8 @@ app.post('/api/db-login',
                         process.env.JWT_SECRET,
                         {expiresIn: '1h'}
                     );
+
+                    console.log("past token");
 
                     const getPerson = await pool.query(`select p.user_id
                                                         from persons p
@@ -158,11 +178,11 @@ app.post('/api/db-login',
                     }
 
 
-                    res.status(200).json({
+                    return res.status(200).json({
                         contents: "Signed In Successfully", token: token
                     });
                 } else {
-                    res.status(401).json({
+                    return res.status(401).json({
                         errors: "Incorrect Email or Password"
                     });
                 }

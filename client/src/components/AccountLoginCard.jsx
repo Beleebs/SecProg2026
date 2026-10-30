@@ -20,13 +20,6 @@ function AccLoginCard() {
                         <button className="acc-login-button">Register</button>
                     </Link>
                 </div>
-
-                <p>Or continue as a guest:</p>
-                <div className="acc-login-option">
-                    <Link to="/room/1">
-                        <button className="acc-login-button">Continue as Guest</button>
-                    </Link>
-                </div>
             </div>
         </div>
     )
