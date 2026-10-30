@@ -23,7 +23,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/register" element={<Register/>}></Route>
         <Route path="/account" element={<Account/>}></Route>
         <Route path="/about" element={<About/>}></Route>
-        <Route path="/room" element={<Room/>}></Route>
+        <Route path="/room/:roomId" element={<Room/>}></Route>
       </Routes>
     </BrowserRouter>
   </StrictMode>

@@ -23,7 +23,9 @@ function AccLoginCard() {
 
                 <p>Or continue as a guest:</p>
                 <div className="acc-login-option">
-                    <button className="acc-login-button">Continue as Guest</button>
+                    <Link to="/room/1">
+                        <button className="acc-login-button">Continue as Guest</button>
+                    </Link>
                 </div>
             </div>
         </div>

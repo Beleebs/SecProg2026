@@ -119,6 +119,22 @@ app.get('/api/get-rooms', async (req, res) => {
     }
 });
 
+// in a room, we get the rooms connected
+app.post('/api/get-room-connections', async (req, res) => {
+    try {
+        console.log(`Received db room connection request from user`);
+        const result = await pool.query(`SELECT * FROM room_connection WHERE room1_id = $1`, [req.body.room]);
+
+        res.status(200).json({
+            contents: result.rows
+        });
+        
+    } catch (error) {
+        console.error('Failed Database Query:', error);
+        res.status(503).json({ error: 'Database unavailable' });
+    }
+});
+
 app.post('/api/enter-room', async (req, res) => {
     try {
         let today = new Date().toISOString().slice(0, 10);
@@ -133,6 +149,9 @@ app.post('/api/enter-room', async (req, res) => {
         else
         {
             const default_event = await pool.query(`select ge.id from gallery_events ge where ge.room_id = $1`, [req.body.room]);
+            if (default_event.rows.length === 0) {
+                return res.status(200).json({ contents: [] });
+            }
             images = await pool.query(`select a.image_path, a.art_name, a.art_description, a.artist from art a where a.event_id = $1`, [default_event.rows[0]['id']]);
         }
 

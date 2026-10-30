@@ -7,11 +7,14 @@ function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [regError, setRegError] = useState('');
+    const [regSuccess, setRegSuccess] = useState('');
 
     const nav = useNavigate();
 
     const handleSubmit = async(e) => {
         e.preventDefault();
+        setRegError('');
+        setRegSuccess('');
         const registerCredentials = { email, password };
 
         const options = {
@@ -27,15 +30,18 @@ function Register() {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error('Failed to login to account: ' + result.errors);
+                throw new Error('Failed to register account: ' + result.errors);
             }
 
             console.log(result.contents);
-            setRegError();
+            setRegSuccess(result.contents);
+            if (response.ok) {
+                nav("/room/lobby", { replace: true }); // default to lobby
+            }
 
         } catch (error) {
-            console.error("Error: ", error);
-            setRegError(error);
+            console.error(error);
+            setRegError(error.message);
         }
     }
 
@@ -50,7 +56,8 @@ function Register() {
                     <label>Password</label>
                     <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button type="submit">Register</button>
-                    {regError && <p>{regError.message}</p>}
+                    {regSuccess && <p role="status">{regSuccess}</p>}
+                    {regError && <p role="alert">{regError}</p>}
                 </form>
             </div>
         </div> 
