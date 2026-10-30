@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import axios from "axios";
+import axios from 'axios';
 
 function Test() {
   const [data, setData] = useState(null);
@@ -11,9 +11,12 @@ function Test() {
   const [loginRes, setLoginRes] = useState(null);
   const [events, setEvents] = useState(null);
   const [event, setEvent] = useState(null);
-  const [file, setFile] = useState()
-  const [description, setDescription] = useState("")
-  const [imageName, setImageName] = useState()
+  const [cevent, setCEvent] = useState(null);
+  const [eevent, setEEvent] = useState(null);
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null); // Optional: for image preview
+  const [uploadedUrl, setUploadedUrl] = useState('');
+
 
   // 1. GET Request: Fetching data on component load
   const handleButtonClick = async () => {
@@ -38,7 +41,7 @@ function Test() {
   const handleButtonClickImage = async () => {
     try {
       const obj = {
-        room: "6",
+        room: "5",
       }
       const authHeader = localStorage.getItem('token');
 
@@ -46,7 +49,7 @@ function Test() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': "Bearer " + authHeader
+          'Authorization': "Bearer " + localStorage.getItem('token')
         },
         body: JSON.stringify(obj)
       }
@@ -68,7 +71,8 @@ function Test() {
         const options = {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            'Authorization': "Bearer " + localStorage.getItem('token')
           },
           body: JSON.stringify(obj)
         }
@@ -93,12 +97,13 @@ function Test() {
     try {
       console.log("test image");
       const obj = {
-        image: "image1.png",
+        image: "978ad2a19156e11d31572cef133751d9",
       }
       const options = {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + localStorage.getItem('token')
         },
         body: JSON.stringify(obj)
       }
@@ -206,19 +211,89 @@ function Test() {
     }
   };
 
-  const submit = async event => {
-    event.preventDefault()
+  const createAndEditEvent = async () => {
+    try {
+      const authHeader = localStorage.getItem('token');
+      const obj1 = {
+        room_id: 2,
+        date: '2026-11-4'
+      }
 
-    const formData = new FormData()
-    formData.append("event_id", 1);
-    formData.append("image_path", file);
-    formData.append("desc", description);
-    formData.append("artist", "testArtist");
-    formData.append("date", new Date().toISOString().slice(0, 10));
+      const options1 = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+        body: JSON.stringify(obj1)
+      }
+      const response1 = await fetch('http://localhost:5000/api/upload-event', options1);
 
-    const result = await axios.post('/api/upload-image', formData, { headers: {'Content-Type': 'multipart/form-data'}})
-    setImageName(result.data.imageName)
-  }
+      const result1 = await response1.json();
+      setCEvent(result1)
+
+      const obj2 = {
+        id: 9,
+        room_id: 6,
+        date: '2026-11-15'
+      }
+
+      const options2 = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+        body: JSON.stringify(obj2)
+      }
+      const response2 = await fetch('http://localhost:5000/api/edit-event', options2);
+
+      const result2 = await response2.json();
+      setEEvent(result2);
+    } catch (error) {
+      console.error("Failed to fetch: ", error);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+
+    if (selectedFile) {
+      setPreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  // Submit file to backend
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!file) return alert('Please select a file first');
+
+    // FormData is required to transport binary file data
+    const formData = new FormData();
+    formData.append('image', file); // 'image' matches upload.single('image') in Express
+    formData.append('event_id', 1); // 'image' matches upload.single('image') in Express
+    formData.append('posted_by', 2);
+    formData.append('art_name', "test");
+    formData.append('desc', "test");
+    formData.append('artist', "test");
+    formData.append('date', new Date().toISOString().slice(0, 10));
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Tells server to expect binary files
+          'Authorization': "Bearer " + localStorage.getItem('token')
+        }
+      });
+
+      setUploadedUrl(response.data.imageUrl); // Save URL returned by backend
+      alert(response.data.message);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Upload failed.');
+    }
+  };
 
   return (
     <>
@@ -253,20 +328,36 @@ function Test() {
       <br />
       {event && <pre>{JSON.stringify(event, null, 1)}</pre>}
       <br />
+      <button onClick={createAndEditEvent}>Create And Edit Event:</button>
+      <br />
+      {cevent && <pre>{JSON.stringify(cevent, null, 1)}</pre>}
+      {eevent && <pre>{JSON.stringify(eevent, null, 1)}</pre>}
+      <br />
 
-      <form onSubmit={submit}>
-        <input
-            filename={file}
-            onChange={e => setFile(e.target.files[0])}
-            type="file"
-            accept="image/*"
-        ></input>
-        <input
-            onChange={e => setDescription(e.target.value)}
-            type="text"
-        ></input>
-        <button type="submit">Submit</button>
-      </form>
+      <div style={{ padding: '20px' }}>
+        <h2>Upload Image to Express</h2>
+        <form onSubmit={handleUpload}>
+          <input type="file" accept="image/*" onChange={handleFileChange} />
+          <button type="submit">Upload</button>
+        </form>
+
+        {/* Client-side Preview */}
+        {preview && (
+            <div>
+              <h3>Preview:</h3>
+              <img src={preview} alt="Preview" style={{ width: '200px' }} />
+            </div>
+        )}
+
+        {/* Server-side Rendered Image */}
+        {uploadedUrl && (
+            <div>
+              <h3>Uploaded Image from Server:</h3>
+              <img src={uploadedUrl} alt="Uploaded" style={{ width: '200px' }} />
+              <p><a href={uploadedUrl} target="_blank" rel="noreferrer">View URL</a></p>
+            </div>
+        )}
+      </div>
     </>
   )
 }
