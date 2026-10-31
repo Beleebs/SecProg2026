@@ -56,9 +56,6 @@ CREATE TABLE audit_logs (
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     actor_user_id INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     action_type TEXT NOT NULL,
-    target_type TEXT,
-    target_id INTEGER,
-    outcome TEXT NOT NULL,
     details JSONB
 );
 
@@ -105,15 +102,15 @@ CREATE TABLE audit_logs (
 -- Images
     INSERT INTO art (event_id, posted_by, image_path, art_name, art_description, artist, art_creation_date)
     VALUES
-        (1, 1, 'image1.png' , 'image1' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (1, 1, 'image1.png' , 'image2' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (2, 1, 'image3.png' , 'image3' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (2, 1, 'image4.png' , 'image4' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (3, 1, 'image5.png' , 'image5' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (3, 1, 'image6.png' , 'image6' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (4, 1, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (4, 1, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (5, 1, 'image9.png' , 'image9' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (5, 1, 'image10.png', 'image10', 'desc', 'artistNameStandIn', '2026-10-28'),
-        (6, 1, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
-        (6, 1, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28');
+        (1, 3, 'image1.png' , 'image1' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (1, 3, 'image1.png' , 'image2' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (2, 3, 'image3.png' , 'image3' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (2, 3, 'image4.png' , 'image4' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (3, 3, 'image5.png' , 'image5' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (3, 3, 'image6.png' , 'image6' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (4, 3, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (4, 3, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (5, 2, 'image9.png' , 'image9' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (5, 2, 'image10.png', 'image10', 'desc', 'artistNameStandIn', '2026-10-28'),
+        (6, 3, 'image7.png' , 'image7' , 'desc', 'artistNameStandIn', '2026-10-28'),
+        (6, 3, 'image8.png' , 'image8' , 'desc', 'artistNameStandIn', '2026-10-28');
