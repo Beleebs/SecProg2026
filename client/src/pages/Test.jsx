@@ -18,6 +18,7 @@ function Test() {
   const [user, setUser] = useState(null);
   const [uuser, setUUser] = useState(null);
   const [duser, setDUser] = useState(null);
+  const [logs, setLogs] = useState(null);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null); // Optional: for image preview
   const [uploadedUrl, setUploadedUrl] = useState('');
@@ -38,6 +39,25 @@ function Test() {
       const response = await fetch('http://localhost:5000/api/get-rooms', options);
       const result = await response.json();
       setData(result);
+    } catch (error) {
+      console.error("Failed to fetch: ", error);
+    }
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const authHeader = localStorage.getItem('token');
+
+      const options = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+      }
+      const response = await fetch('http://localhost:5000/api/fetch-logs', options);
+      const result = await response.json();
+      setLogs(result);
     } catch (error) {
       console.error("Failed to fetch: ", error);
     }
@@ -97,7 +117,7 @@ function Test() {
   const imageFetch = async () => {
     try {
       const obj = {
-        image: "978ad2a19156e11d31572cef133751d9",
+        image: "image1.png",
       }
       const options = {
         method: "POST",
@@ -453,6 +473,10 @@ function Test() {
             </div>
         )}
       </div>
+      <br />
+      <button onClick={fetchLogs}>Fetch Modify Delete User:</button>
+      <br />
+      {logs && <pre>{JSON.stringify(logs, null, 1)}</pre>}
     </>
   )
 }
