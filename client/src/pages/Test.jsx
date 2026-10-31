@@ -13,6 +13,11 @@ function Test() {
   const [event, setEvent] = useState(null);
   const [cevent, setCEvent] = useState(null);
   const [eevent, setEEvent] = useState(null);
+  const [devent, setDEvent] = useState(null);
+  const [users, setUsers] = useState(null);
+  const [user, setUser] = useState(null);
+  const [uuser, setUUser] = useState(null);
+  const [duser, setDUser] = useState(null);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null); // Optional: for image preview
   const [uploadedUrl, setUploadedUrl] = useState('');
@@ -54,19 +59,15 @@ function Test() {
         body: JSON.stringify(obj)
       }
       const response = await fetch('http://localhost:5000/api/enter-room', options);
-      console.log(response);
       const result = await response.json();
-      setDBQuery(result);console.log(result.contents[0]);
+      setDBQuery(result);
 
       let images = result.contents;
-      console.log(images);
 
       for(let i = 0; i < images.length; i++){
-        console.log(images[0]);
         const obj = {
           image: images[i]['image_path'],
         }
-        console.log(obj);
 
         const options = {
           method: "POST",
@@ -95,7 +96,6 @@ function Test() {
 
   const imageFetch = async () => {
     try {
-      console.log("test image");
       const obj = {
         image: "978ad2a19156e11d31572cef133751d9",
       }
@@ -118,7 +118,6 @@ function Test() {
 
   const testReg = async () => {
     try {
-      console.log("test reg");
       const obj = {
         email: "email3@email.com",
         password: "password",
@@ -132,7 +131,6 @@ function Test() {
         body: JSON.stringify(obj)
       }
 
-      console.log(options);
       const response = await fetch('http://localhost:5000/api/db-register', options);
       const result = await response.json();
       setRegRes(result);
@@ -143,7 +141,6 @@ function Test() {
 
   const testLogin = async () => {
     try {
-      console.log("test reg");
       const obj = {
         email: "admin@email.com",
         password: "password",
@@ -157,7 +154,6 @@ function Test() {
         body: JSON.stringify(obj)
       }
 
-      console.log(options);
       const response = await fetch('http://localhost:5000/api/db-login', options);
       const result = await response.json();
       localStorage.setItem("token", result["token"]);
@@ -211,7 +207,7 @@ function Test() {
     }
   };
 
-  const createAndEditEvent = async () => {
+  const createEditDeleteEvent = async () => {
     try {
       const authHeader = localStorage.getItem('token');
       const obj1 = {
@@ -250,6 +246,97 @@ function Test() {
 
       const result2 = await response2.json();
       setEEvent(result2);
+
+      const obj3 = {
+        id: 9,
+        room_id: 6,
+        date: '2026-11-15'
+      }
+
+      const options3 = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+        body: JSON.stringify(obj3)
+      }
+      const response3 = await fetch('http://localhost:5000/api/edit-event', options3);
+
+      const result3 = await response3.json();
+      setDEvent(result3);
+    } catch (error) {
+      console.error("Failed to fetch: ", error);
+    }
+  };
+
+  const FetchDeleteUser = async () => {
+    try {
+      const authHeader = localStorage.getItem('token');
+
+      const options1 = {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+      }
+      const response1 = await fetch('http://localhost:5000/api/fetch-users', options1);
+
+      const result1 = await response1.json();
+      setUsers(result1)
+
+      const obj4 = {
+        id: 1,
+        role: 'employee'
+      }
+
+      const options4 = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+        body: JSON.stringify(obj4)
+      }
+      const response4 = await fetch('http://localhost:5000/api/update-user', options4);
+
+      const result4 = await response4.json();
+      setUUser(result4);
+
+      const obj2 = {
+        id: 1,
+      }
+
+      const options2 = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+        body: JSON.stringify(obj2)
+      }
+      const response2 = await fetch('http://localhost:5000/api/fetch-user', options2);
+
+      const result2 = await response2.json();
+      setUser(result2);
+
+      const obj3 = {
+        id: 1,
+      }
+
+      const options3 = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': "Bearer " + authHeader
+        },
+        body: JSON.stringify(obj3)
+      }
+      const response3 = await fetch('http://localhost:5000/api/delete-user', options3);
+
+      const result3 = await response3.json();
+      setDUser(result3);
     } catch (error) {
       console.error("Failed to fetch: ", error);
     }
@@ -328,10 +415,18 @@ function Test() {
       <br />
       {event && <pre>{JSON.stringify(event, null, 1)}</pre>}
       <br />
-      <button onClick={createAndEditEvent}>Create And Edit Event:</button>
+      <button onClick={createEditDeleteEvent}>Create And Edit Event:</button>
       <br />
       {cevent && <pre>{JSON.stringify(cevent, null, 1)}</pre>}
       {eevent && <pre>{JSON.stringify(eevent, null, 1)}</pre>}
+      {devent && <pre>{JSON.stringify(devent, null, 1)}</pre>}
+      <br />
+      <button onClick={FetchDeleteUser}>Fetch Modify Delete User:</button>
+      <br />
+      {users && <pre>{JSON.stringify(users, null, 1)}</pre>}
+      {user && <pre>{JSON.stringify(user, null, 1)}</pre>}
+      {uuser && <pre>{JSON.stringify(uuser, null, 1)}</pre>}
+      {duser && <pre>{JSON.stringify(duser, null, 1)}</pre>}
       <br />
 
       <div style={{ padding: '20px' }}>

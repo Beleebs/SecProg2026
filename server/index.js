@@ -6,6 +6,7 @@ import {body, validationResult} from "express-validator";
 import pg from 'pg';
 import jwt from 'jsonwebtoken'
 import multer from 'multer';
+import { unlink } from 'node:fs'
 
 const {Pool} = pg;
 // grab things from the env file
@@ -79,20 +80,16 @@ app.post('/api/db-register',
             const user_email_check = await pool.query(`select count(*)
                                                        from users u
                                                        where u.email = $1`, [req.body.email]);
-            console.log(user_email_check.rows[0]['count']);
 
             if (user_email_check.rows[0]['count'] !== '0') {
-                console.log('email fail');
                 return res.status(400).json({errors: 'Account already attached to email'});
             }
 
             bcrypt.genSalt(saltRounds, function (err, salt) {
                 bcrypt.hash(req.body.password, salt, async function (err, hash) {
                     // returns hash
-                    console.log(hash);
                     const result = await pool.query(`INSERT INTO users (email, password_hash, user_role)
                                                      VALUES ($1, $2, 'guest')`, [req.body.email, hash]);
-                    console.log(result);
                 });
             });
 
@@ -155,12 +152,10 @@ app.post('/api/db-login',
                     } else {
                         const addPerson = await pool.query(`update persons
                                                             set token = $2
-                                                            where user_id = $1`, [hashed_password.rows[0]['id'], token])
-                        console.log('getRoom');
+                                                            where user_id = $1`, [hashed_password.rows[0]['id'], token]);
                         const getRoomID = await pool.query(`select r.id
                                                             from rooms r
                                                             where r.room_name = $1`, ['lobby']);
-                        console.log('addState');
                         const addPersonState = await pool.query(`update person_state ps
                                                                  set current_room_id = $2
                                                                  where user_id = $1;`, [hashed_password.rows[0]['id'], getRoomID.rows[0]['id']]);
@@ -184,7 +179,6 @@ app.post('/api/db-login',
 
 app.get('/api/get-rooms', authenticateToken, async (req, res) => {
     try {
-        console.log(`Received db query request from user`);
         const result = await pool.query(`SELECT *
                                          FROM rooms`);
 
@@ -223,7 +217,6 @@ app.post('/api/enter-room',
                 return res.status(400).json({errors: 'Room Full'});
             }
 
-            console.log(req.user['userId'])
             //Check if user can access
             const roomPerms = await pool.query(`select employees_only
                                                 from rooms r
@@ -232,8 +225,6 @@ app.post('/api/enter-room',
                                                    from users u
                                                    where u.id = $1`, [req.user['userId']]);
 
-            console.log(roomPerms.rows[0]['employees_only']);
-            console.log(getUserPerms);
             if (getUserPerms.rows[0]['user_role'] === 'guest' && roomPerms.rows[0]['employees_only'] === true) {
                 return res.status(400).json({errors: 'Enployees Only'});
             }
@@ -244,7 +235,6 @@ app.post('/api/enter-room',
                                                from gallery_events ge
                                                where ge.room_id = $1
                                                  and ge.event_date = $2`, [req.body.room, today]);
-            console.log(event_id.rows.length);
             let images;
 
             if (event_id.rows.length !== 0) {
@@ -334,8 +324,6 @@ app.post('/api/fetch-event',
                                             from gallery_events ge
                                             where ge.id = $1`, [req.body.event]);
 
-            console.log(event);
-
             res.status(200).json({
                 contents: event.rows
             });
@@ -370,9 +358,7 @@ app.post('/api/edit-event',
     ],
     authenticateToken, async (req, res) => {
         try {
-            console.log(req.body)
             const errors = validationResult(req);
-            console.log(errors);
             if (!errors.isEmpty()) {
                 return res.status(400).json({errors: errors.array()});
             }
@@ -399,8 +385,6 @@ app.post('/api/edit-event',
                                                 event_date    = $3
                                             where id = $4`, [req.user['userId'], req.body.room_id, req.body.date, req.body.id]);
 
-            console.log(event);
-
             res.status(200).json({
                 contents: "Updated Event" + req.body.id
             });
@@ -421,7 +405,6 @@ app.post('/api/upload-event',
         try {
 
             const errors = validationResult(req);
-            console.log(errors);
             if (!errors.isEmpty()) {
                 return res.status(400).json({errors: errors.array()});
             }
@@ -446,7 +429,40 @@ app.post('/api/upload-event',
                                             values ($1, $2,
                                                     $3)`, [req.user['userId'], req.body.room_id, req.body.date]);
 
-            console.log(event);
+            res.status(200).json({
+                contents: "Created Event"
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/delete-event',
+    [
+        [
+            body('room_id').isNumeric(),
+            body('date').isString(),
+        ],
+    ],
+    authenticateToken, async (req, res) => {
+        try {
+
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({errors: errors.array()});
+            }
+
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin' || getUserPerms.rows[0]['user_role'] === 'employee')) {
+                return res.status(400).json({errors: 'Employee Only Operation'});
+            }
+
+            const event = await pool.query(`delete from gallery_events where user_id = $1 and room_id = $2 and event_date = $3`,
+                                            [req.user['userId'], req.body.room_id, req.body.date, req.body.id]);
 
             res.status(200).json({
                 contents: "Created Event"
@@ -472,7 +488,6 @@ app.post('/api/upload-image', upload.single('image'),
         try {
 
             const errors = validationResult(req);
-            console.log(errors);
             if (!errors.isEmpty()) {
                 return res.status(400).json({errors: errors.array()});
             }
@@ -502,31 +517,183 @@ app.post('/api/upload-image', upload.single('image'),
         }
     })
 
-app.post('/api/remove-image', [
+app.post('/api/delete-image',
     [
-        body('id').isNumeric(),
+        [
+            body('image').isString(),
+            body('image_id').isNumeric()
+        ],
     ],
-], upload.single('image'), async (req, res) => {
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({errors: errors.array()});
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({errors: errors.array()});
+            }
+
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin' || getUserPerms.rows[0]['user_role'] === 'employee')) {
+                return res.status(400).json({errors: 'Employee Only Operation'});
+            }
+
+            const event = await pool.query(`delete from art where id = $1`,
+                [req.body.image_id]);
+
+            unlink('data/images/'+req.body.image, (err) => {
+                if (err) throw err;
+                console.log('path/file.txt was deleted');
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
         }
+    });
 
-        const event = await pool.query(`delete
-                                        from art a
-                                        where a.id = $1`, [req.body.id]);
+app.get('/api/fetch-users',
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
 
-        res.status(200).json({
-            contents: event.rows
-        });
-    } catch (error) {
-        console.error('Failed Database Query:', error);
-        res.status(503).json({error: 'Service unavailable'});
-    }
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin')) {
+                return res.status(400).json({errors: 'Admin Only Operation'});
+            }
 
+            const users = await pool.query(`select * from users u where u.user_role = 'employee' or u.user_role = 'guest' or u.id = $1`, [req.user['userId']]);
 
-})
+            res.status(200).json({
+                contents: users.rows
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/fetch-user',
+    [
+        [
+            body('id').isNumeric(),
+        ],
+    ],
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin')) {
+                return res.status(400).json({errors: 'Admin Only Operation'});
+            }
+
+            const users = await pool.query(`select * from users u where u.id = $1`, [req.body.id]);
+
+            res.status(200).json({
+                contents: users.rows
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/update-user',
+    [
+        [
+            body('id').isNumeric(),
+            body('role').isString()
+        ],
+    ],
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin')) {
+                return res.status(400).json({errors: 'Admin Only Operation'});
+            }
+
+            if (!(req.body.role === 'guest' || req.body.role === 'employee' || req.body.role === 'admin'))
+            {
+                return res.status(400).json({errors: 'Please Enter a Valid role'});
+            }
+
+            const users = await pool.query(`update users set user_role = $2 where id = $1`, [req.body.id, req.body.role]);
+
+            res.status(200).json({
+                contents: {response: "User info Updated"}
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/delete-user',
+    [
+        [
+            body('id').isNumeric(),
+        ],
+    ],
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({errors: errors.array()});
+            }
+
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin')) {
+                return res.status(400).json({errors: 'Employee Only Operation'});
+            }
+
+            const deleteUser = await pool.query(`delete from users u where u.id = $1`, [req.body.id]);
+
+            res.status(200).json({
+                contents: { response: 'User Removed' }
+            });
+
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.get('/api/fetch-logs',
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin')) {
+                return res.status(400).json({errors: 'Admin Only Operation'});
+            }
+
+            const logs = await pool.query(`select * from audit_logs`);
+
+            res.status(200).json({
+                contents: logs.rows
+            });
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(503).json({error: 'Service unavailable'});
+        }
+    });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
