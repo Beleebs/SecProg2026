@@ -607,7 +607,7 @@ app.get('/api/fetch-users',
                 return res.status(400).json({errors: 'Admin Only Operation'});
             }
 
-            const users = await pool.query(`select * from users u where u.user_role = 'employee' or u.user_role = 'guest' or u.id = $1`, [req.user['userId']]);
+            const users = await pool.query(`select u.id, u.email, u.user_role from users u where u.user_role = 'employee' or u.user_role = 'guest' or u.id = $1`, [req.user['userId']]);
 
             res.status(200).json({
                 contents: users.rows
@@ -664,6 +664,10 @@ app.post('/api/update-user',
                 return res.status(400).json({errors: 'Admin Only Operation'});
             }
 
+            if (req.body.id === 1 || req.body.id === 2 || req.body.id === 3) {
+                return res.status(400).json({errors: 'Cannot Override default accounts'});
+            }
+
             if (!(req.body.role === 'guest' || req.body.role === 'employee' || req.body.role === 'admin'))
             {
                 return res.status(400).json({errors: 'Please Enter a Valid role'});
@@ -711,6 +715,56 @@ app.post('/api/delete-user',
         } catch (error) {
             console.error('Failed Database Query:', error);
             res.status(503).json({error: 'Service unavailable'});
+        }
+    });
+
+app.post('/api/create-user',
+    [
+        [
+            body('email').isEmail(),
+            body('password').notEmpty(),
+            body('role').isString()
+        ],
+    ],
+    authenticateToken,
+    async (req, res) => {
+        try {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(400).json({errors: errors.array()});
+            }
+
+            const getUserPerms = await pool.query(`select user_role
+                                                   from users u
+                                                   where u.id = $1`, [req.user['userId']]);
+
+            if (!(getUserPerms.rows[0]['user_role'] === 'admin')) {
+                return res.status(400).json({errors: 'Admin Only Operation'});
+            }
+
+            const user_email_check = await pool.query(`select count(*)
+                                                       from users u
+                                                       where u.email = $1`, [req.body.email]);
+
+            if (user_email_check.rows[0]['count'] !== '0') {
+                return res.status(400).json({errors: 'Account already attached to email'});
+            }
+
+            bcrypt.genSalt(saltRounds, function (err, salt) {
+                bcrypt.hash(req.body.password, salt, async function (err, hash) {
+                    // returns hash
+                    const result = await pool.query(`INSERT INTO users (email, password_hash, user_role)
+                                                     VALUES ($1, $2, $3)`, [req.body.email, hash, req.body.role]);
+                });
+            });
+
+            res.status(200).json({
+                contents: "Registered Successfully"
+            });
+
+        } catch (error) {
+            console.error('Failed Database Query:', error);
+            res.status(403).json({error: 'Database unavailable'});
         }
     });
 

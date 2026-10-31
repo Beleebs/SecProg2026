@@ -1,5 +1,4 @@
 // account login card
-// prompts the user if they want to be a guest, login, or register for an account
 import { Link } from "react-router-dom"
 
 function AccLoginCard() {
