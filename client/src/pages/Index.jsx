@@ -9,7 +9,7 @@ function Index() {
             <div className="index">
                 <h1 className="index-title">ArtBuk</h1>
                 <Link to="/home">
-                    <button className="index index-button">Enter Gallery</button>
+                    <button className="index index-button">Enter</button>
                 </Link>
             </div>
         </div>

@@ -1,5 +1,4 @@
 // account login card
-// prompts the user if they want to be a guest, login, or register for an account
 import { Link } from "react-router-dom"
 
 function AccLoginCard() {
@@ -19,11 +18,6 @@ function AccLoginCard() {
                     <Link to="/register">
                         <button className="acc-login-button">Register</button>
                     </Link>
-                </div>
-
-                <p>Or continue as a guest:</p>
-                <div className="acc-login-option">
-                    <button className="acc-login-button">Continue as Guest</button>
                 </div>
             </div>
         </div>

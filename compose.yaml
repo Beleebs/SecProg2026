@@ -8,6 +8,8 @@ services:
       - .env
     depends_on:
       - db
+    volumes:
+      - ./server/images:/data/images
 
   db:
     image: postgres:17
@@ -30,7 +32,7 @@ services:
       - /app/node_modules
     depends_on:
       - server
-    
 
 volumes:
   postgres_data:
+  image_data:
