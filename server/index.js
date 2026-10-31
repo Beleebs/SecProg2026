@@ -162,7 +162,6 @@ app.post('/api/db-login',
                     contents: "Incorrect Email or Password"
                 }]);
 
-                res.status(400).json({
                 return res.status(400).json({
                     errors: "Incorrect Email or Password"
                 });
@@ -220,7 +219,6 @@ app.post('/api/db-login',
                         contents: "Incorrect Email or Password"
                     }]);
 
-                    res.status(401).json({
                     return res.status(401).json({
                         errors: "Incorrect Email or Password"
                     });
@@ -692,7 +690,6 @@ app.post('/api/upload-image', upload.single('image'),
     [
         [
             body('event_id').isNumeric(),
-            body('posted_by').isNumeric(),
             body('art_name').isString(),
             body('desc').isString(),
             body('artist').isString(),

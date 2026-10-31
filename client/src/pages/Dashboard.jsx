@@ -21,6 +21,16 @@ function Dashboard() {
     const [eventDate, setEventDate] = useState("");
     const [eventRoom, setEventRoom] = useState("2");
 
+    const [imageFile, setImageFile] = useState(null);
+    const [imageName, setImageName] = useState("");
+    const [imageEvent, setImageEvent] = useState("");
+    const [imageDescription, setImageDescription] = useState("");
+    const [imageArtist, setImageArtist] = useState("");
+    const [imageDate, setImageDate] = useState("");
+    const [imageSubmit, setImageSubmit] = useState("");
+    const [imageSubmitError, setImageSubmitError] = useState("");
+    const [imageUploading, setImageUploading] = useState(false);
+
     // admin
     const [regSuccess, setRegSuccess] = useState("");
     const [regError, setRegError] = useState("");
@@ -30,6 +40,9 @@ function Dashboard() {
 
     const [allUsers, setAllUsers] = useState(null);
     const [allUsersError, setAllUsersError] = useState("");
+
+    const [logs, setLogs] = useState(null);
+    const [logsError, setLogsError] = useState("");
 
     const [userRoles, setUserRoles] = useState({});
     const [updateError, setUpdateError] = useState("");
@@ -88,6 +101,34 @@ function Dashboard() {
             setAllUsers(result.contents);
         } catch (error) {
             setAllUsersError(error.message);
+        }
+    }
+
+    async function loadLogs() {
+        setLogsError("");
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setLogsError("Please login to view the dashboard");
+            return;
+        }
+        const body = {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+
+        try {
+            const response = await fetch("/api/fetch-logs", body);
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.errors || result.error || result.message || "Could not fetch logs");
+            }
+
+            setLogs(result.contents);
+        } catch (error) {
+            setLogsError(error.message);
         }
     }
 
@@ -198,6 +239,7 @@ function Dashboard() {
         if (!user || user.role !== "admin") 
             return;
         loadUsers();
+        loadLogs();
     }, [user]);
 
     const handleLogout = async () => {
@@ -230,6 +272,67 @@ function Dashboard() {
             await loadEvents();
         } catch (error) {
             setEventSubmitError(error.message);
+        }
+    }
+
+    const handleCreateImage = async (e) => {
+        e.preventDefault();
+        setImageSubmit("");
+        setImageSubmitError("");
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setImageSubmitError("Please login to view the dashboard");
+            return;
+        }
+        if (!imageFile || !imageEvent) {
+            setImageSubmitError("Please select an image and an event");
+            return;
+        }
+
+        const form = e.currentTarget;
+        const formData = new FormData();
+        formData.append("image", imageFile);
+        formData.append("event_id", imageEvent);
+        formData.append("art_name", imageName);
+        formData.append("desc", imageDescription);
+        formData.append("artist", imageArtist);
+        formData.append("date", imageDate);
+
+        const body = {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            body: formData
+        }
+        setImageUploading(true);
+        try {
+            const response = await fetch("/api/upload-image", body);
+            if (!response.headers.get("content-type")?.includes("application/json")) {
+                throw new Error("Could not upload image");
+            }
+            const result = await response.json();
+
+            if (!response.ok) {
+                const message = Array.isArray(result.errors)
+                    ? result.errors.map((error) => error.msg).join(", ")
+                    : result.errors || result.error || result.message;
+                throw new Error(message || "Could not upload image");
+            }
+
+            setImageSubmit("Successfully added image to the gallery!");
+            setImageFile(null);
+            setImageName("");
+            setImageEvent("");
+            setImageDescription("");
+            setImageArtist("");
+            setImageDate("");
+            form.reset();
+        } catch (error) {
+            setImageSubmitError(error.message);
+        } finally {
+            setImageUploading(false);
         }
     }
 
@@ -354,17 +457,33 @@ function Dashboard() {
 
                                 <div className="dashboard-option">
                                     <h2>Create Image</h2>
-                                    <form>
+                                    <form onSubmit={handleCreateImage}>
                                         <label>Image File:</label>
-                                        <input type="image" />
+                                        <input id="image-file" type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0] ?? null)} required />
                                         <label>Image Name:</label>
-                                        <input id="" type="text" />
+                                        <input id="image-name" type="text" value={imageName} onChange={(e) => setImageName(e.target.value)} required />
                                         <label>Art Event:</label>
-                                        <select id="image-event">
-                                            {/* populate events */}
+                                        <select id="image-event" value={imageEvent} onChange={(e) => setImageEvent(e.target.value)} required>
+                                            <option value="">Select an event</option>
+                                            {events && events.map((event) => (
+                                                <option key={event.id} value={event.id}>
+                                                    Event {event.id}: Room {event.room_id} - {event.event_date ?? "No date"}
+                                                </option>
+                                            ))}
                                         </select>
-                                        <button type="submit">Create Event</button>
+                                        <label>Description:</label>
+                                        <textarea id="image-description" value={imageDescription} onChange={(e) => setImageDescription(e.target.value)} />
+                                        <label>Artist:</label>
+                                        <input id="image-artist" type="text" value={imageArtist} onChange={(e) => setImageArtist(e.target.value)} required />
+                                        <label>Creation Date:</label>
+                                        <input id="image-date" type="date" value={imageDate} onChange={(e) => setImageDate(e.target.value)} required />
+                                        <button type="submit" disabled={imageUploading || !events || events.length === 0}>
+                                            {imageUploading ? "Uploading..." : "Create Image"}
+                                        </button>
                                     </form>
+                                    {events && events.length === 0 && <p>Create an event before adding an image.</p>}
+                                    {imageSubmitError && <p role="alert">{imageSubmitError}</p>}
+                                    {imageSubmit && <p role="status">{imageSubmit}</p>}
                                 </div>
 
                             </>
@@ -452,7 +571,30 @@ function Dashboard() {
 
                                 <div className="dashboard-option">
                                     <h2>View Logs</h2>
-                                    {/* populate logs */}
+                                    {logsError && <p role="alert">{logsError}</p>}
+                                    {logs && logs.length === 0 && <p>No logs found.</p>}
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">ID</th>
+                                                <th scope="col">Occurred At</th>
+                                                <th scope="col">User ID</th>
+                                                <th scope="col">Action</th>
+                                                <th scope="col">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {logs && logs.map((log) => (
+                                                <tr key={log.id}>
+                                                    <td>{log.id}</td>
+                                                    <td>{log.occurred_at}</td>
+                                                    <td>{log.actor_user_id ?? "N/A"}</td>
+                                                    <td>{log.action_type}</td>
+                                                    <td>{JSON.stringify(log.details)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </>
                         )}
