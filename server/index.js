@@ -39,11 +39,6 @@ const storage = multer.diskStorage({
 })
 let upload = multer({dest: '/data/images/'})
 
-app.get('/api/message', (req, res) => {
-    console.log(`Received request from user`);
-    res.json({message: "Hello from the Express backend!"});
-});
-
 async function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
